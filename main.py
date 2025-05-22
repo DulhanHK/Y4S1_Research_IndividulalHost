@@ -77,6 +77,7 @@ class UserInput(BaseModel):
             raise ValueError(f"No matching age range found for age {value}. Available ranges: {', '.join(age_ranges)}")
         return value
 
+@app.post("/recommendations")
 @app.post("/recommendations/")
 def get_recommendations(user_input: UserInput):
     try:
