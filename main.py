@@ -10,8 +10,7 @@ from sklearn.preprocessing import OneHotEncoder
 data = pd.read_csv("Updated_Bipolar_Dataset.csv")
 data = data.fillna("")  # Replace NaN with empty string
 
-# Ensure Activity Type column exists and fill missing with 'other'
-data["Activity Type"] = data.get("Activity Type", pd.Series(["other"] * len(data))).fillna("other")
+
 
 # Encode gender
 gender_map = {"Male": 1, "Female": 0}
