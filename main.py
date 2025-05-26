@@ -86,8 +86,8 @@ class UserInput(BaseModel):
         return value
 
 # @app.post("/recommendations")
-# @app.post("/recommendations/")
-@app.post("recommendations/")
+@app.post("/recommendations/")
+# @app.post("recommendations/")
 def get_recommendations(user_input: UserInput):
     try:
         # Encode user input
