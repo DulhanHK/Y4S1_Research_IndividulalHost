@@ -106,6 +106,7 @@ def get_recommendations(user_input: UserInput):
         recommendations = []
         seen_activities = set()
 
+        # First, try to fetch 5 unique recommendations from sorted indices
         for idx in sorted_indices:
             if len(recommendations) >= 5:
                 break  # Stop when we have 5 unique recommendations
@@ -123,18 +124,27 @@ def get_recommendations(user_input: UserInput):
 
             seen_activities.add(activity_name)
 
-        # Ensure that 5 recommendations are always returned
-        while len(recommendations) < 5:
-            # If there are not enough activities, fill up with fallback recommendations
-            fallback_activity = {
-                "activity": "Fallback Activity",
-                "description": "This is a fallback recommendation.",
-                "duration": 30,  # Default duration
-                "image_url": "https://example.com/fallback.jpg"  # Example fallback image
-            }
-            recommendations.append(fallback_activity)
+        # If fewer than 5 activities are found, add the next best ones from the sorted list
+        if len(recommendations) < 5:
+            for idx in sorted_indices[len(recommendations):]:
+                if len(recommendations) >= 5:
+                    break  # Stop when we have 5 unique recommendations
+
+                activity_name = data["Recommended Activities"].iloc[idx]
+                if activity_name in seen_activities:
+                    continue  # Avoid duplicates
+
+                recommendations.append({
+                    "activity": activity_name,
+                    "description": data["Activity Description"].iloc[idx],
+                    "duration": int(data["Duration (minutes)"].iloc[idx]),
+                    "image_url": data["Image URL"].iloc[idx]
+                })
+
+                seen_activities.add(activity_name)
 
         return {"message": "Top 5 Recommendations", "recommendations": recommendations}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
