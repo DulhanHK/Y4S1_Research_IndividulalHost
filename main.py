@@ -85,17 +85,24 @@ class UserInput(BaseModel):
             raise ValueError(f"No matching age range for age {value}. Available ranges: {', '.join(age_ranges)}")
         return value
 
-@app.post("/recommendations")
-@app.post("/recommendations/")
+# @app.post("/recommendations")
+# @app.post("/recommendations/")
 @app.post("recommendations/")
 def get_recommendations(user_input: UserInput):
     try:
-        # Your existing logic to process user_input
-        # e.g., calculating similarity
-        similarity = cosine_similarity(combined_features, user_input_vector)
-        sorted_indices = similarity.flatten().argsort()[::-1]  # Sorting based on similarity
+        # Encode user input
+        user_encoded = encoder.transform([[user_input.bipolar_stage, user_input.mood, get_age_range(user_input.age)]])
+        user_input_vector = np.hstack((
+            np.zeros(text_features.shape[1]),  # No text features for user input
+            user_encoded.flatten(),
+            [gender_map[user_input.gender]]
+        )).reshape(1, -1)
 
-        # Fetch top 5 recommendations, ensuring at least 5 are returned
+        # Calculate similarity
+        similarity = cosine_similarity(combined_features, user_input_vector)
+        sorted_indices = similarity.flatten().argsort()[::-1]  # Sort based on similarity
+
+        # Fetch top 5 recommendations
         recommendations = []
         seen_activities = set()
 
@@ -104,11 +111,9 @@ def get_recommendations(user_input: UserInput):
                 break  # Stop when we have 5 unique recommendations
 
             activity_name = data["Recommended Activities"].iloc[idx]
-            # Check if activity has already been added to recommendations
             if activity_name in seen_activities:
-                continue
+                continue  # Avoid duplicates
 
-            # Add the activity to the recommendations
             recommendations.append({
                 "activity": activity_name,
                 "description": data["Activity Description"].iloc[idx],
@@ -130,7 +135,6 @@ def get_recommendations(user_input: UserInput):
             recommendations.append(fallback_activity)
 
         return {"message": "Top 5 Recommendations", "recommendations": recommendations}
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
