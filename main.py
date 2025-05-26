@@ -87,6 +87,7 @@ class UserInput(BaseModel):
 
 @app.post("/recommendations")
 @app.post("/recommendations/")
+@app.post("recommendations/")
 def get_recommendations(user_input: UserInput):
     try:
         user_age_range = get_age_range(user_input.age)
