@@ -85,9 +85,10 @@ class UserInput(BaseModel):
             raise ValueError(f"No matching age range for age {value}. Available ranges: {', '.join(age_ranges)}")
         return value
 
-@app.post("/recommendations")
+# @app.post("/recommendations")
+# @app.post("/recommendations/")
+# @app.post("recommendations/")
 @app.post("/recommendations/")
-@app.post("recommendations/")
 def get_recommendations(user_input: UserInput):
     try:
         # Encode user input
@@ -106,26 +107,37 @@ def get_recommendations(user_input: UserInput):
         recommendations = []
         seen_activities = set()
 
-        # First, try to fetch 5 unique recommendations from sorted indices
         for idx in sorted_indices:
             if len(recommendations) >= 5:
                 break  # Stop when we have 5 unique recommendations
 
             activity_name = data["Recommended Activities"].iloc[idx]
-            if activity_name in seen_activities:
-                continue  # Avoid duplicates
+            activity_gender = data["Gender"].iloc[idx]  # Get the gender of the activity
+            
+            # Skip activity if it doesn't match user's gender
+            if user_input.gender == "Male" and activity_gender != "Male":
+                continue
+            elif user_input.gender == "Female" and activity_gender != "Female":
+                continue
 
+            # Avoid duplicates
+            if activity_name in seen_activities:
+                continue
+
+            # Fetch gender-specific image URL
+            image_url = data["Image URL"].iloc[idx] if activity_gender == user_input.gender else "https://example.com/default_image.jpg"
+            
             recommendations.append({
                 "activity": activity_name,
                 "description": data["Activity Description"].iloc[idx],
                 "duration": int(data["Duration (minutes)"].iloc[idx]),
-                "image_url": data["Image URL"].iloc[idx]
+                "image_url": image_url
             })
 
             seen_activities.add(activity_name)
 
-        # If fewer than 5 activities are found, add the next best ones from the sorted list
-        if len(recommendations) < 5:
+        # Ensure 5 recommendations are always returned
+        while len(recommendations) < 5:
             for idx in sorted_indices[len(recommendations):]:
                 if len(recommendations) >= 5:
                     break  # Stop when we have 5 unique recommendations
@@ -134,11 +146,15 @@ def get_recommendations(user_input: UserInput):
                 if activity_name in seen_activities:
                     continue  # Avoid duplicates
 
+                # Fetch gender-specific image URL
+                activity_gender = data["Gender"].iloc[idx]
+                image_url = data["Image URL"].iloc[idx] if activity_gender == user_input.gender else "https://example.com/default_image.jpg"
+
                 recommendations.append({
                     "activity": activity_name,
                     "description": data["Activity Description"].iloc[idx],
                     "duration": int(data["Duration (minutes)"].iloc[idx]),
-                    "image_url": data["Image URL"].iloc[idx]
+                    "image_url": image_url
                 })
 
                 seen_activities.add(activity_name)
